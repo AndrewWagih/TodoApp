@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>To Do List</title>
+	 <link rel="shortcut icon" type="image/ico" href="if_icon-40-clipboard-list_314403.png" />
+	 <link rel="stylesheet" type="text/css" href="ToDoList.css">
+	 <style type="text/css">
+			
+	 </style>
+</head>
+<body>
+	<section class="todoapp">
+  <header class="header">
+    <h1>Todos</h1>
+    <input class="new-todo"
+      autocomplete="off"
+      placeholder="What needs to be done?"
+      V-model='newTodo'
+      @keyup.enter='addTodo'
+      >
+  </header>
+  <section class="main" >
+    <input class="toggle-all" id="toggle-all" type="checkbox" v-model="allDone">
+    <label for="toggle-all">Mark all as complete</label>
+    
+    <ul class="todo-list">
+      <li class="todo" v-for="todo in filterTodo" :class="{completed:todo.completed,editing:todo==editingTodo}">
+        <div class="view">
+          <input class="toggle" type="checkbox" v-model="todo.completed">
+          <label @dblclick="editTodo(todo)">{{ todo.title }}</label>
+          <button class="destroy" @click="deleteToDo(todo)"></button>
+        </div>
+        <input class="edit" type="text" v-model="todo.title" 
+        @keyup.enter="doneEditing()"
+        @keyup.esc="cancelEditing()"
+        >
+      </li>
+    </ul>
+  </section>
+  <footer class="footer">
+    <span class="todo-count">
+      <strong>{{ remaningTodos }}</strong> {{remaningText}}
+    </span>
+    <ul class="filters">
+      <li><a href="#" @click.prevent="visibility='all'" :class="{selected:visibility=='all'}">All</a></li>
+      <li><a href="#" @click.prevent="visibility='active'" :class="{selected:visibility=='active'}">Active</a></li> 
+      <li><a href="#"  @click.prevent="visibility='completed'" :class="{selected:visibility=='completed'}">Completed</a></li>
+    </ul>
+    <button class="clear-completed" @click="deleteCompleted">
+      Clear completed
+    </button>
+  </footer>
+</section>
+<footer class="info">
+  <p>Double-click to edit a todo</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script type="text/javascript">
+	var filters ={
+		all:function(todos){
+			return todos;
+		},
+		active:function(todos){
+			return todos.filter(function(todo){
+				return !todo.completed;
+			});
+		},
+		completed:function(todos){
+			return todos.filter(function(todo){
+				return todo.completed;
+			});
+		}
+	}
+
+	var todos_storage = {
+		fetch:function(){
+			var todos = JSON.parse(localStorage.getItem('todos') || '[]');
+			return todos;
+		},
+		save:function(todos){
+			localStorage.setItem('todos',JSON.stringify(todos));
+		}
+	}
+
+
+	new Vue({
+		'el':'.todoapp',
+		data:{
+			newTodo:'',
+			visibility:'all',
+			editingTodo:null ,
+			oldEditingTodoTitle:null,
+			todos:todos_storage.fetch()
+		},
+		computed:{
+			filterTodo:function(){
+				return filters[this.visibility](this.todos);
+			},
+			remaningTodos:function(){
+				return filters.active(this.todos).length;
+			},
+			remaningText:function(){
+				if (filters.active(this.todos).length > 1) {
+					return 'items left';
+				}else if (filters.active(this.todos).length == 0){
+					return 'There are no items'
+				}else{
+					return 'item left';
+				}
+			},
+			allDone:{
+				get: function(){
+					return this.remaningTodos === 0;
+				},
+				set: function(value){
+					this.todos.forEach(function(todo){
+						 todo.completed = value;
+
+					});
+				}
+			}
+		},
+		methods:{
+			deleteToDo:function(todo){
+				this.todos.splice(this.todos.indexOf(todo),1);
+			},
+			addTodo:function(){
+				if (this.newTodo == '') {
+					return ;
+				}
+				this.todos.push({
+					title:this.newTodo,
+					completed:false
+				});
+				this.newTodo='';
+			},
+			deleteCompleted(){
+				this.todos= filters.active(this.todos);
+			},
+			editTodo(todo){
+				this.editingTodo = todo;
+				this.oldEditingTodoTitle = todo.title;
+			},
+			doneEditing(){
+				if (this.editingTodo.title == '') 
+					this.deleteToDo(this.editingTodo);
+
+				this.editingTodo = null;
+				
+			},
+			cancelEditing(){
+				this.editingTodo.title = this.oldEditingTodoTitle;
+				this.editingTodo = null;
+			}
+		},
+		watch:{
+			todos:{
+				handler:function(todos){
+					todos_storage.save(todos);
+				},
+				deep:true
+			}
+		}
+	});
+
+</script>
+</body>
+</html>
